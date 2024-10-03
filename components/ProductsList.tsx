@@ -88,7 +88,7 @@ const ProductsList: React.FC<ProductsListProps> = ({ products }) => {
 		}
 	};
 
-	const handleDeliveryConfirm = async () => {
+	const handleDeliveryConfirm = async (): Promise<boolean> => {
 		if (!deliveryEmail) {
 			alert("Email is required.");
 			return false;
@@ -98,40 +98,50 @@ const ProductsList: React.FC<ProductsListProps> = ({ products }) => {
 			return false;
 		}
 
-		console.log("Finalizing purchase for:", buyProduct);
-		console.log("Custom Fields:", customFields);
-		console.log("Delivery Email:", deliveryEmail);
-		const { data } = await axios.post(
-			`${API_URL}/payments`,
-			{
-				product_id: buyProduct?.id, // Product ID
-				title: buyProduct?.name, // Product name
-				currency: buyProduct?.currency, // Product currency
-				value: buyProduct?.price, // Product price
-				email: deliveryEmail, // Pass the customer's email
-				custom_fields: customFields, // Custom fields data
-				return_url: "https://vouch.saint.bet",
-			},
-			{
-				headers: {
-					Authorization: `Bearer ${API_KEY}`, // Replace API_KEY with your actual API key
-					"Content-Type": "application/json", // Set Content-Type
+		try {
+			console.log("Finalizing purchase for:", buyProduct);
+			console.log("Custom Fields:", customFields);
+			console.log("Delivery Email:", deliveryEmail);
+
+			const { data } = await axios.post(
+				`${API_URL}/payments`,
+				{
+					product_id: buyProduct?.id,
+					title: buyProduct?.name,
+					currency: buyProduct?.currency,
+					value: buyProduct?.price,
+					email: deliveryEmail,
+					custom_fields: customFields,
+					return_url: "https://vouch.saint.bet",
 				},
-			},
-		);
+				{
+					headers: {
+						Authorization: `Bearer ${API_KEY}`,
+						"Content-Type": "application/json",
+					},
+				},
+			);
 
-		console.log("Payment Response:", data);
+			console.log("Payment Response:", data);
 
-		if (data.error) {
-			alert(data.error);
+			if (data.error) {
+				alert(data.error);
+				return false;
+			}
+
+			// Redirect to the payment URL
+			router.push(data.data.url);
+
+			setBuyProduct(null);
+			setShowDeliveryModal(false);
+			return true;
+		} catch (error) {
+			console.error("Error processing payment:", error);
+			alert(
+				"An error occurred while processing your payment. Please try again.",
+			);
 			return false;
 		}
-
-		// Redirect to the payment URL
-		router.push(data.data.url);
-
-		setBuyProduct(null);
-		setShowDeliveryModal(false);
 	};
 
 	return (
